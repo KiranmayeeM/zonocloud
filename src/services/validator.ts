@@ -10,6 +10,7 @@ export function validateEmail(validEmail:Email){
 }
 
 export function validateMobile(validMobile:MObile){
+  console.log(validMobile.mobile)
   if(validMobile.mobile.length < 0){
     throw new HttpErrors.UnprocessableEntity('Please Enter the correct mobile Number');
   }
