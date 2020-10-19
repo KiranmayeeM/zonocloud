@@ -1,3 +1,5 @@
+import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
 import {
   Count,
   CountSchema,
@@ -15,9 +17,13 @@ import {
   put,
   requestBody
 } from '@loopback/rest';
+import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
 import * as _ from 'lodash';
+import {TokenServiceBindings, UserServiceBindings} from '../keys';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
+import {JWTService} from '../services/jwt-servce';
+import {MyUserService} from '../services/user-service';
 import {validateEmail, validateMobile} from '../services/validator';
 const rn = require('random-number');
 const gen = rn.generator({
@@ -31,6 +37,10 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository : UserRepository,
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
+    public jwtService : JWTService,
+    @inject(UserServiceBindings.USER_SERVICE)
+    public userService: MyUserService,
   ) {}
 
   @post('/sendotp', {
@@ -69,24 +79,29 @@ export class UserController {
       },
     },
   })
-  async verifyOtp(@requestBody() userData:User): Promise<string> {
+  async verifyOtp(@requestBody() userData:User): Promise<User> {
     console.log('userData', userData);
-    let message = "";
+    const verifiedUser = await this.userService.verifyCredentials(userData);
+    console.log(verifiedUser);
+    const userProfile = this.userService.convertToUserProfile(verifiedUser);
+    console.log(userProfile);
+    const token = await this.jwtService.generateToken(userProfile);
+    console.log(token);
+    userData.token = token;
     await this.userRepository.findOne({"where":{mobile:userData.mobile}}).then(async (user)=>{
       console.log('user', user);
       if(user && user!==undefined || user!==null){
         console.log('user', user);
         if(user.OTP === userData.OTP){
           userData.registeredOn = new Date();
-          message = "OTP verified Succesfully";
+          userData.token = token;
           await this.userRepository.updateById(user.id, userData);
         }
       }
     }).catch((err)=> {
-      message = "Otpverification failed";
-      throw new HttpErrors.UnprocessableEntity(err)
+      throw new HttpErrors.UnprocessableEntity(`Otp verification failed ${err}`)
     });
-    return message;
+    return userData;
   }
 
   @post('/users/login', {
@@ -104,6 +119,29 @@ export class UserController {
       validateMobile(_.pick(userData, ['mobile']));
     const savedUser = await this.userRepository.create(userData);
     return savedUser;
+  }
+
+  @get('/users/me', {
+    responses: {
+      '200': {
+        description: 'User model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(User, {includeRelations: true}),
+          },
+        },
+      },
+    },
+  })
+  @authenticate('jwt')
+  async printCurrentUser(
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
+  ): Promise<User[]> {
+    console.log(currentUserProfile);
+    const userId = currentUserProfile[securityId];
+    console.log(userId);
+    return this.userRepository.find({where:{id:userId}});
   }
 
   @post('/users', {

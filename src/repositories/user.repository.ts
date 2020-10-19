@@ -8,7 +8,7 @@ export type Email = {
   email: string;
 }
 
-export type MObile = {
+export type Mobile = {
   mobile: string
 }
 

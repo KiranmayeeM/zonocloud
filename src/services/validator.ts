@@ -1,6 +1,6 @@
 import {HttpErrors} from '@loopback/rest';
 import IsEmail from 'isemail';
-import {Email, MObile} from '../repositories/user.repository';
+import {Email, Mobile} from '../repositories/user.repository';
 
 export function validateEmail(validEmail:Email){
   console.log(validEmail.email)
@@ -9,7 +9,7 @@ export function validateEmail(validEmail:Email){
   }
 }
 
-export function validateMobile(validMobile:MObile){
+export function validateMobile(validMobile:Mobile){
   console.log(validMobile.mobile)
   if(validMobile.mobile.length < 0){
     throw new HttpErrors.UnprocessableEntity('Please Enter the correct mobile Number');

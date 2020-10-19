@@ -1,15 +1,23 @@
+import {AuthenticationComponent, registerAuthenticationStrategy} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig} from '@loopback/core';
-import {
-  RestExplorerBindings,
-  RestExplorerComponent,
-} from '@loopback/rest-explorer';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
+import {
+  RestExplorerBindings,
+  RestExplorerComponent
+} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
+import {JWTStrategy} from './authentication-strategies/jwt-strategies';
+import {
+  TokenServiceBindings,
+  TokenServiceConstants,
+  UserServiceBindings
+} from './keys';
 import {MySequence} from './sequence';
-
+import {JWTService} from './services/jwt-servce';
+import {MyUserService} from './services/user-service';
 export {ApplicationConfig};
 
 export class ZonocloudApplication extends BootMixin(
@@ -18,6 +26,11 @@ export class ZonocloudApplication extends BootMixin(
   constructor(options: ApplicationConfig = {}) {
     super(options);
 
+    //set up bindings
+    this.setupBinding();
+
+    this.component(AuthenticationComponent);
+    registerAuthenticationStrategy(this, JWTStrategy);
     // Set up the custom sequence
     this.sequence(MySequence);
 
@@ -40,5 +53,10 @@ export class ZonocloudApplication extends BootMixin(
         nested: true,
       },
     };
+  }
+  setupBinding():void{
+    this.bind(UserServiceBindings.USER_SERVICE).toClass(MyUserService);
+    this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
+    this.bind(TokenServiceBindings.TOKEN_SECRET).to(TokenServiceConstants.TOKEN_SECRET_VALUE);
   }
 }

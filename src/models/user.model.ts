@@ -45,6 +45,11 @@ export class User extends Entity {
   email: string;
 
   @property({
+    type: 'string',
+  })
+  token: string;
+
+  @property({
     type: "Date",
   })
   registeredOn: Date;
