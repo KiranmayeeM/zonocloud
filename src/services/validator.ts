@@ -3,6 +3,7 @@ import IsEmail from 'isemail';
 import {Email, MObile} from '../repositories/user.repository';
 
 export function validateEmail(validEmail:Email){
+  console.log(validEmail.email)
   if(!IsEmail.validate(validEmail.email)){
     throw new HttpErrors.UnprocessableEntity('Invalid Email');
   }
